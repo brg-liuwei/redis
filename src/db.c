@@ -361,6 +361,54 @@ void randomkeyCommand(client *c) {
     decrRefCount(key);
 }
 
+void delkeysCommand(client *c) {
+    dictIterator *di;
+    dictEntry *de;
+    sds pattern = c->argv[1]->ptr;
+    int plen = sdslen(pattern), allkeys;
+
+    robj *todel[16];
+    int deleted = 0;
+    int robjlen = 0;
+
+#define batchDelete() do { \
+    for (int i = 0; i != robjlen; ++i) { \
+        if (dbDelete(c->db, todel[i])) { \
+            signalModifiedKey(c->db, todel[i]); \
+            notifyKeyspaceEvent(NOTIFY_GENERIC, \
+                    "del", todel[i], c->db->id); \
+            server.dirty++; \
+            deleted++; \
+        } \
+        decrRefCount(todel[i]); \
+    } \
+    robjlen = 0; \
+} while (0)
+
+    di = dictGetSafeIterator(c->db->dict);
+    allkeys = (pattern[0] == '*' && pattern[1] == '\0');
+    while((de = dictNext(di)) != NULL) {
+        sds key = dictGetKey(de);
+        robj *keyobj;
+
+        if (allkeys || stringmatchlen(pattern,plen,key,sdslen(key),0)) {
+            keyobj = createStringObject(key,sdslen(key));
+            expireIfNeeded(c->db, keyobj);
+            if (robjlen >= 16) {
+                batchDelete();
+            }
+            todel[robjlen++] = keyobj;
+        }
+
+    }
+
+    dictReleaseIterator(di);
+    batchDelete();
+    addReplyLongLong(c, deleted);
+
+#undef batchDelete
+}
+
 void keysCommand(client *c) {
     dictIterator *di;
     dictEntry *de;

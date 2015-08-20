@@ -143,7 +143,20 @@ then in another terminal try the following:
     (integer) 1
     redis> incr mycounter
     (integer) 2
-    redis>
+
+new command in this branch: *delkeys*
+    redis> set abca1 hello
+    OK
+    redis> set abcb1 world
+    OK
+    redis> set abcxiaolaoshi qin
+    OK
+    redis> keys abc*
+    1) "abcxiaolaoshi"
+    2) "abca1"
+    3) "abcb1"
+    redis> delkeys abc*
+    (integer) 3
 
 You can find the list of all the available commands at http://redis.io/commands.
 
