@@ -144,7 +144,8 @@ then in another terminal try the following:
     redis> incr mycounter
     (integer) 2
 
-new command in this branch: *delkeys*
+**new command in this branch**: *delkeys*
+
     redis> set abca1 hello
     OK
     redis> set abcb1 world
